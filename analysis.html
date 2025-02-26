@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Analysis</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 2px 2px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .chart-container {
+            margin: 20px 0;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .advice-button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 20px;
+            background-color: #007BFF;
+            color: white;
+            font-size: 16px;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .advice-button:hover {
+            background-color: #0056b3;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>📊 Expense Analysis</h2>
+
+        <div class="chart-container">
+            <canvas id="dailyExpensesChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="categoryExpensesChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="weeklyExpensesChart"></canvas>
+        </div>
+
+        <!-- Button to navigate to Advice Page -->
+        <a href="advice.html" class="advice-button">💡 Get Financial Advice</a>
+    </div>
+
+    <script>
+        async function fetchExpenseData() {
+            const userId = localStorage.getItem("userId"); 
+            const response = await fetch(`http://localhost:5000/expenses/${userId}`);
+            const data = await response.json();
+            return data;
+        }
+
+        async function generateCharts() {
+            const expenses = await fetchExpenseData();
+
+            const dailyExpenses = {};
+            const categoryExpenses = {};
+            const weeklyExpenses = { "Sunday": 0, "Monday": 0, "Tuesday": 0, "Wednesday": 0, "Thursday": 0, "Friday": 0, "Saturday": 0 };
+
+            expenses.forEach(expense => {
+                const date = expense.date;
+                const category = expense.category;
+                const amount = parseFloat(expense.amount);
+                const dayOfWeek = new Date(date).toLocaleString('en-us', { weekday: 'long' });
+
+                dailyExpenses[date] = (dailyExpenses[date] || 0) + amount;
+                categoryExpenses[category] = (categoryExpenses[category] || 0) + amount;
+                weeklyExpenses[dayOfWeek] += amount;
+            });
+
+            new Chart(document.getElementById("dailyExpensesChart"), {
+                type: "line",
+                data: {
+                    labels: Object.keys(dailyExpenses),
+                    datasets: [{ label: "Daily Expenses", data: Object.values(dailyExpenses), borderColor: "blue", fill: false }]
+                }
+            });
+
+            new Chart(document.getElementById("categoryExpensesChart"), {
+                type: "bar",
+                data: {
+                    labels: Object.keys(categoryExpenses),
+                    datasets: [{ label: "Category-wise Expenses", data: Object.values(categoryExpenses), backgroundColor: "green" }]
+                }
+            });
+
+            new Chart(document.getElementById("weeklyExpensesChart"), {
+                type: "bar",
+                data: {
+                    labels: Object.keys(weeklyExpenses),
+                    datasets: [{ label: "Weekly Expenses", data: Object.values(weeklyExpenses), backgroundColor: "orange" }]
+                }
+            });
+        }
+
+        generateCharts();
+    </script>
+</body>
+</html>
